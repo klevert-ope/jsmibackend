@@ -10,7 +10,6 @@ import (
 	"jsmi-api/models"
 	"jsmi-api/utils"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/go-redis/redis/v8"
@@ -41,13 +40,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pasetoSecret := os.Getenv("PASETO_SECRET")
-	if pasetoSecret == "" {
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
-	claims, err := utils.ValidatePASETO(refreshTokenRequest.RefreshToken, pasetoSecret)
+	claims, err := utils.ValidatePASETO(refreshTokenRequest.RefreshToken)
 	if err != nil {
 		http.Error(w, "Invalid refresh token", http.StatusUnauthorized)
 		return
@@ -55,7 +48,7 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	userID := claims.UserID
 
-	accessToken, err := utils.GeneratePASETO(userID, pasetoSecret, 15*time.Minute)
+	accessToken, err := utils.GeneratePASETO(userID, 15*time.Minute)
 	if err != nil {
 		http.Error(w, "Failed to generate new access token", http.StatusInternalServerError)
 		return
@@ -138,19 +131,13 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pasetoSecret := os.Getenv("PASETO_SECRET")
-	if pasetoSecret == "" {
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
-	accessToken, err := utils.GeneratePASETO(user.ID, pasetoSecret, 15*time.Minute)
+	accessToken, err := utils.GeneratePASETO(user.ID, 15*time.Minute)
 	if err != nil {
 		http.Error(w, "Failed to generate access token", http.StatusInternalServerError)
 		return
 	}
 
-	refreshToken, err := utils.GeneratePASETO(user.ID, pasetoSecret, 7*24*time.Hour)
+	refreshToken, err := utils.GeneratePASETO(user.ID, 7*24*time.Hour)
 	if err != nil {
 		http.Error(w, "Failed to generate refresh token", http.StatusInternalServerError)
 		return
@@ -247,13 +234,7 @@ func (h *AuthHandler) DeleteAccount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pasetoSecret := os.Getenv("PASETO_SECRET")
-	if pasetoSecret == "" {
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
-	claims, err := utils.ValidatePASETO(cookie.Value, pasetoSecret)
+	claims, err := utils.ValidatePASETO(cookie.Value)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return
@@ -327,13 +308,7 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pasetoSecret := os.Getenv("PASETO_SECRET")
-	if pasetoSecret == "" {
-		http.Error(w, "Server configuration error", http.StatusInternalServerError)
-		return
-	}
-
-	claims, err := utils.ValidatePASETO(cookie.Value, pasetoSecret)
+	claims, err := utils.ValidatePASETO(cookie.Value)
 	if err != nil {
 		http.Error(w, "Invalid token", http.StatusUnauthorized)
 		return

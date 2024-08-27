@@ -3,7 +3,6 @@ package middlewares
 import (
 	"jsmi-api/utils"
 	"net/http"
-	"os"
 )
 
 // TokenAuthMiddleware is a middleware function that checks for a valid PASETO token
@@ -15,13 +14,7 @@ func TokenAuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		pasetoSecret := os.Getenv("PASETO_SECRET")
-		if pasetoSecret == "" {
-			http.Error(w, "Server configuration error", http.StatusInternalServerError)
-			return
-		}
-
-		_, err = utils.ValidatePASETO(cookie.Value, pasetoSecret)
+		_, err = utils.ValidatePASETO(cookie.Value)
 		if err != nil {
 			http.Error(w, "Invalid token", http.StatusUnauthorized)
 			return
