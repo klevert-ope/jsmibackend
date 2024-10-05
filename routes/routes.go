@@ -5,6 +5,7 @@ import (
 	"jsmi-api/db"
 	"jsmi-api/middlewares"
 	"net/http"
+	"net/http/pprof"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -44,6 +45,10 @@ func SetupRoutes(config Config) http.Handler {
 	controllers.SetupPostRoutes(protectedRouter)
 	controllers.SetupLiveRoutes(protectedRouter)
 	authHandler.SetupUserRoutes(protectedRouter)
+
+	// Register pprof routes to enable profiling
+	router.HandleFunc("/debug/pprof/", pprof.Index)
+	router.PathPrefix("/debug/pprof/").Handler(http.DefaultServeMux)
 
 	return router
 }

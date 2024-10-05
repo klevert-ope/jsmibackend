@@ -1,5 +1,9 @@
 # Start from the official Golang image
-FROM golang:1.22-alpine AS build
+FROM golang:1.23.2-alpine AS build
+
+LABEL maintainer="Klevert Opee"
+LABEL description="Backend API"
+LABEL version=2.0
 
 # Set the Current Working Directory inside the container
 WORKDIR /app
@@ -7,17 +11,17 @@ WORKDIR /app
 # Copy go mod and sum files
 COPY go.mod go.sum ./
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+# Download all dependencies
 RUN go mod download
 
 # Copy the source code from the current directory to the Working Directory inside the container
 COPY . .
 
-# Build the Go app
-RUN go build -o main .
+# Build the Go app from the cmd directory
+RUN go build -o cmd/main ./cmd
 
 # Start a new stage from scratch
-FROM alpine:3.19
+FROM alpine:3.20
 
 # Create a group and user to run the application with non-root privileges
 RUN addgroup -S app && adduser -S app -G app
@@ -27,7 +31,7 @@ WORKDIR /app
 RUN chown app:app /app
 
 # Copy the Pre-built binary file from the previous stage
-COPY --from=build /app/main /app/main
+COPY --from=build /app/cmd/main /app/main
 
 # Copy the migrations directory from the source code to the Working Directory inside the container
 COPY --from=build /app/db/migrations /app/db/migrations

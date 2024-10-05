@@ -9,6 +9,7 @@ import (
 	"jsmi-api/db"
 	"jsmi-api/middlewares"
 	"jsmi-api/models"
+	"jsmi-api/validation"
 	"net/http"
 	"time"
 
@@ -28,6 +29,7 @@ func SetupPostRoutes(r *mux.Router) {
 
 func GetPosts(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
+
 	if id != "" {
 		GetPost(w, r)
 		return
@@ -35,6 +37,7 @@ func GetPosts(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	posts, err := fetchPosts(ctx)
+
 	if err != nil {
 		middlewares.HttpError(w, "Failed to fetch posts", http.StatusInternalServerError, err)
 		return
@@ -106,6 +109,7 @@ func GetPost(w http.ResponseWriter, r *http.Request) {
 
 func fetchPost(ctx context.Context, postID string) (models.Post, error) {
 	cachedData, err := db.RedisClient.Get(ctx, "post:"+postID).Result()
+
 	if err == nil {
 		var post models.Post
 		if err := json.Unmarshal([]byte(cachedData), &post); err != nil {
@@ -119,7 +123,9 @@ func fetchPost(ctx context.Context, postID string) (models.Post, error) {
 	var post models.Post
 	err = db.DB.QueryRowContext(ctx, "SELECT id, title, excerpt, body, created_at FROM posts WHERE id = $1", postID).
 		Scan(&post.ID, &post.Title, &post.Excerpt, &post.Body, &post.CreatedAt)
+
 	if err != nil {
+
 		if errors.Is(err, sql.ErrNoRows) {
 			return models.Post{}, fmt.Errorf("post %s not found: %w", postID, sql.ErrNoRows)
 		}
@@ -127,6 +133,7 @@ func fetchPost(ctx context.Context, postID string) (models.Post, error) {
 	}
 
 	jsonData, err := json.Marshal(post)
+
 	if err == nil {
 		const CacheTime = 7 * 24 * time.Hour
 		db.RedisClient.Set(ctx, "post:"+postID, jsonData, CacheTime)
@@ -144,7 +151,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := middlewares.ValidatePost(post); err != nil {
+	if err := validation.ValidatePost(post); err != nil {
 		middlewares.HttpError(w, err.Error(), http.StatusBadRequest, err)
 		return
 	}
@@ -170,29 +177,33 @@ func insertPost(ctx context.Context, post models.Post) error {
 func UpdatePost(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	idStr := r.URL.Query().Get("id")
+
 	if idStr == "" {
 		http.Error(w, "Post ID is required", http.StatusBadRequest)
 		return
 	}
 
 	id, err := uuid.Parse(idStr)
+
 	if err != nil {
 		middlewares.HttpError(w, "Invalid ID parameter", http.StatusBadRequest, err)
 		return
 	}
 
 	var post models.Post
+
 	if err := json.NewDecoder(r.Body).Decode(&post); err != nil {
 		middlewares.HttpError(w, "Invalid JSON payload", http.StatusBadRequest, err)
 		return
 	}
 
-	if err := middlewares.ValidatePost(post); err != nil {
+	if err := validation.ValidatePost(post); err != nil {
 		middlewares.HttpError(w, err.Error(), http.StatusBadRequest, err)
 		return
 	}
 
 	post.ID = id
+
 	if err := updatePost(ctx, post); err != nil {
 		middlewares.HttpError(w, "Failed to update post", http.StatusInternalServerError, err)
 		return

@@ -9,6 +9,7 @@ import (
 	"jsmi-api/db"
 	"jsmi-api/middlewares"
 	"jsmi-api/models"
+	"jsmi-api/validation"
 	"net/http"
 	"time"
 
@@ -92,6 +93,7 @@ func fetchLives(ctx context.Context) ([]models.Live, error) {
 
 func GetLive(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Query().Get("id")
+
 	if idStr == "" {
 		http.Error(w, "ID parameter is required", http.StatusBadRequest)
 		return
@@ -99,6 +101,7 @@ func GetLive(w http.ResponseWriter, r *http.Request) {
 
 	ctx := r.Context()
 	live, err := fetchLive(ctx, idStr)
+
 	if err != nil {
 		middlewares.HttpError(w, "Live not found", http.StatusNotFound, err)
 		return
@@ -150,7 +153,7 @@ func CreateLive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := middlewares.ValidateLives(live); err != nil {
+	if err := validation.ValidateLives(live); err != nil {
 		middlewares.HttpError(w, err.Error(), http.StatusBadRequest, err)
 		return
 	}
@@ -198,7 +201,7 @@ func UpdateLive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := middlewares.ValidateLives(live); err != nil {
+	if err := validation.ValidateLives(live); err != nil {
 		middlewares.HttpError(w, err.Error(), http.StatusBadRequest, err)
 		return
 	}

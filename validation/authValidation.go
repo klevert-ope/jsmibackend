@@ -1,4 +1,4 @@
-package middlewares
+package validation
 
 import (
 	"errors"
@@ -10,13 +10,13 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-// ValidationError represents custom validation errors
+// ValidationError represents custom validation errors.
 type ValidationError struct {
 	Errors []string
 }
 
 func (e *ValidationError) Error() string {
-	return fmt.Sprintf("validation errors: %s", strings.Join(e.Errors, ", "))
+	return "validation errors: " + strings.Join(e.Errors, ", ")
 }
 
 var validate *validator.Validate
@@ -53,18 +53,25 @@ func ValidateUserData(user models.User) error {
 	return nil
 }
 
+// Define static errors at the package level
+var (
+	ErrPasswordTooShort   = errors.New("new password must be at least 8 characters long")
+	ErrPasswordSameAsOld  = errors.New("new password must be different from the old password")
+	ErrPasswordNotComplex = errors.New("new password must include at least one uppercase letter, one lowercase letter, one digit, and one special character")
+)
+
 // ValidatePasswordChange checks if the old and new passwords are valid
 func ValidatePasswordChange(oldPassword, newPassword string) error {
 	if len(newPassword) < 8 {
-		return errors.New("new password must be at least 8 characters long")
+		return ErrPasswordTooShort
 	}
 
 	if oldPassword == newPassword {
-		return errors.New("new password must be different from the old password")
+		return ErrPasswordSameAsOld
 	}
 
 	if !isComplexPassword(newPassword) {
-		return errors.New("new password must include at least one uppercase letter, one lowercase letter, one digit, and one special character")
+		return ErrPasswordNotComplex
 	}
 
 	return nil

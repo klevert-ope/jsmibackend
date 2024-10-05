@@ -13,14 +13,17 @@ func ValidateBearerToken(expectedBearerToken string) func(http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Retrieve the Bearer token from the Authorization header
 			authHeader := r.Header.Get("Authorization")
+
 			if authHeader == "" {
 				http.Error(w, "Authorization header is missing", http.StatusUnauthorized)
+
 				return
 			}
 
 			// Check if the Authorization header has the Bearer scheme
 			if !strings.HasPrefix(authHeader, "Bearer ") {
 				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+
 				return
 			}
 
@@ -34,6 +37,7 @@ func ValidateBearerToken(expectedBearerToken string) func(http.Handler) http.Han
 			// Constant-time comparison to mitigate timing attacks
 			if !secureCompare(tokenLower, expectedTokenLower) {
 				http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+				
 				return
 			}
 
@@ -47,10 +51,12 @@ func secureCompare(a, b string) bool {
 	if len(a) != len(b) {
 		return false
 	}
+
 	result := byte(0)
-	for i := 0; i < len(a); i++ {
+	for i := range a {
 		result |= a[i] ^ b[i]
 	}
+
 	return result == 0
 }
 

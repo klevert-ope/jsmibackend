@@ -7,6 +7,7 @@ import (
 	"jsmi-api/routes"
 	"log"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"sync"
@@ -35,8 +36,8 @@ func main() {
 	srv := &http.Server{
 		Addr:           ":8000",
 		Handler:        handler,
-		ReadTimeout:    30 * time.Second,
-		WriteTimeout:   30 * time.Second,
+		ReadTimeout:    100 * time.Second,
+		WriteTimeout:   100 * time.Second,
 		MaxHeaderBytes: 7500,
 		IdleTimeout:    120 * time.Second,
 	}
