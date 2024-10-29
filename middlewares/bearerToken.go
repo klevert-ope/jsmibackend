@@ -1,14 +1,30 @@
 package middlewares
 
 import (
+	"errors"
 	"log"
 	"net/http"
+	"os"
 	"strings"
-	"time"
 )
 
+// LoadBearerTokenConfig retrieves the bearer token from the environment variable.
+func LoadBearerTokenConfig() (string, error) {
+	bearerToken := os.Getenv("BEARER_TOKEN")
+	if bearerToken == "" {
+		return "", errors.New("bearer token environment variable (BEARER_TOKEN) is not set")
+	}
+	return bearerToken, nil
+}
+
 // ValidateBearerToken validates the Bearer token in the Authorization header.
-func ValidateBearerToken(expectedBearerToken string) func(http.Handler) http.Handler {
+func ValidateBearerToken() func(http.Handler) http.Handler {
+	// Load the Bearer token when the middleware is initialized
+	expectedBearerToken, err := LoadBearerTokenConfig()
+	if err != nil {
+		log.Fatalf("Failed to load Bearer token: %v", err)
+	}
+
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Retrieve the Bearer token from the Authorization header
@@ -16,14 +32,12 @@ func ValidateBearerToken(expectedBearerToken string) func(http.Handler) http.Han
 
 			if authHeader == "" {
 				http.Error(w, "Authorization header is missing", http.StatusUnauthorized)
-
 				return
 			}
 
 			// Check if the Authorization header has the Bearer scheme
 			if !strings.HasPrefix(authHeader, "Bearer ") {
 				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
-
 				return
 			}
 
@@ -37,7 +51,6 @@ func ValidateBearerToken(expectedBearerToken string) func(http.Handler) http.Han
 			// Constant-time comparison to mitigate timing attacks
 			if !secureCompare(tokenLower, expectedTokenLower) {
 				http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
-				
 				return
 			}
 
@@ -58,15 +71,4 @@ func secureCompare(a, b string) bool {
 	}
 
 	return result == 0
-}
-
-// LoggingMiddleware logs information about incoming requests.
-func LoggingMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		start := time.Now()
-
-		next.ServeHTTP(w, r)
-
-		log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
-	})
 }

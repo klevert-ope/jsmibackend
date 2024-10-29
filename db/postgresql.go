@@ -3,17 +3,21 @@ package db
 import (
 	"context"
 	"database/sql"
-	_ "github.com/lib/pq"
 	"log"
 	"os"
 
+	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 )
 
 var DB *sql.DB
 
-// InitDB initializes the database connection and sets up Goose for migrations
+type Config struct {
+	DBURL string
+}
+
+// InitDB initializes the database connection and sets up Goose for migrations.
 func InitDB(ctx context.Context, dataSourceName string) error {
 	var err error
 	DB, err = sql.Open("postgres", dataSourceName)
@@ -39,30 +43,14 @@ func InitDB(ctx context.Context, dataSourceName string) error {
 	return nil
 }
 
-// Config holds the application configuration.
-type Config struct {
-	DBURL       string
-	BearerToken string
-}
-
-// GetBearerToken retrieves the bearer token from the configuration.
-func (c *Config) GetBearerToken() string {
-	return c.BearerToken
-}
-
-func LoadEnvConfig() (*Config, error) {
+// LoadDBConfig retrieves the database URL from environment variables.
+func LoadDBConfig() (*Config, error) {
 	dbURL := os.Getenv("DB_URL")
 	if dbURL == "" {
 		return nil, errors.New("database URL (DB_URL) environment variable is not set")
 	}
 
-	bearerToken := os.Getenv("BEARER_TOKEN")
-	if bearerToken == "" {
-		return nil, errors.New("bearer token environment variable (BEARER_TOKEN) is not set")
-	}
-
 	return &Config{
-		DBURL:       dbURL,
-		BearerToken: bearerToken,
+		DBURL: dbURL,
 	}, nil
 }

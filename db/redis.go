@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-redis/redis/v8"
 	"log"
 	"os"
 	"time"
+
+	"github.com/go-redis/redis/v8"
 )
 
 var RedisClient *redis.Client
@@ -21,20 +22,7 @@ type RedisConfig struct {
 	MaxRetries   int
 }
 
-func init() {
-	config, err := LoadRedisConfig()
-	if err != nil {
-		log.Fatalf("Failed to load Redis configuration: %v", err)
-	}
-
-	RedisClient, err = NewRedisClient(config)
-	if err != nil {
-		log.Fatalf("Failed to initialize Redis client: %v", err)
-	}
-
-	log.Println("Redis connection initialized successfully.")
-}
-
+// LoadRedisConfig loads the Redis configuration from environment variables.
 func LoadRedisConfig() (RedisConfig, error) {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {
@@ -51,6 +39,7 @@ func LoadRedisConfig() (RedisConfig, error) {
 	}, nil
 }
 
+// NewRedisClient creates a new Redis client based on the provided configuration.
 func NewRedisClient(config RedisConfig) (*redis.Client, error) {
 	opt, err := redis.ParseURL(config.URL)
 	if err != nil {
@@ -70,4 +59,20 @@ func NewRedisClient(config RedisConfig) (*redis.Client, error) {
 	client.Options().MaxRetries = config.MaxRetries
 
 	return client, nil
+}
+
+// InitRedis initializes the Redis client and logs the connection status.
+func InitRedis() error {
+	config, err := LoadRedisConfig()
+	if err != nil {
+		return fmt.Errorf("failed to load Redis configuration: %v", err)
+	}
+
+	RedisClient, err = NewRedisClient(config)
+	if err != nil {
+		return fmt.Errorf("failed to initialize Redis client: %v", err)
+	}
+
+	log.Println("Redis connection initialized successfully.")
+	return nil
 }

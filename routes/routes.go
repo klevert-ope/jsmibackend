@@ -11,21 +11,16 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Config interface represents the configuration needed for setting up routes.
-type Config interface {
-	GetBearerToken() string
-}
-
 // SetupRoutes sets up the application routes and middlewares.
-func SetupRoutes(config Config) http.Handler {
+func SetupRoutes(config *db.Config) http.Handler {
 	router := mux.NewRouter()
 	authHandler := &controllers.AuthHandler{
-		Config: config.(*db.Config), // Assert the type to *db.Config
+		Config: config,
 	}
 
 	// Apply global middlewares
 	router.Use(middlewares.CorsMiddleware(&middlewares.CorsConfig{
-		AllowedOrigins:   []string{"http://0.0.0.0:3000", "http://localhost:8000", "https://www.jehovahshammahministriesinternational.org", "https://jsmi.koyeb.app"},
+		AllowedOrigins:   []string{"http://0.0.0.0:3000", "http://localhost:8000", "https://www.jehovahshammahministriesinternational.org"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -38,7 +33,7 @@ func SetupRoutes(config Config) http.Handler {
 
 	// Set up protected routes (apply Bearer token middleware here)
 	protectedRouter := router.PathPrefix("/").Subrouter()
-	protectedRouter.Use(middlewares.ValidateBearerToken(config.GetBearerToken()))
+	protectedRouter.Use(middlewares.ValidateBearerToken())
 
 	// Set up routes that require authentication
 	controllers.SetupRootRoute(protectedRouter)
